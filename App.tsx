@@ -1,11 +1,16 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
+import { FAB, useTheme } from 'react-native-paper';
+
 
 export default function App() {
+  const theme = useTheme();
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={{ color: theme.colors.onBackground, fontSize: 18 }}>
+        Hello, this is {theme.dark ? 'Dark' : 'Light'} mode!
+      </Text>
+      <FAB icon="plus"></FAB>
     </View>
   );
 }
@@ -13,8 +18,7 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
   },
 });
