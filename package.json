@@ -15,7 +15,9 @@
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-paper": "^5.14.5",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-safe-area-context": "^5.5.2",
+    "expo-sqlite": "~15.2.14",
+    "expo-application": "~6.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
