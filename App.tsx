@@ -1,24 +1,20 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
-import { FAB, useTheme } from 'react-native-paper';
+import { BottomNavigation, Text } from "react-native-paper";
+import RunsList from "@/Runs/RunsList"
+import { useState } from "react";
 
 
 export default function App() {
-  const theme = useTheme();
-  return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Text style={{ color: theme.colors.onBackground, fontSize: 18 }}>
-        Hello, this is {theme.dark ? 'Dark' : 'Light'} mode!
-      </Text>
-      <FAB icon="plus"></FAB>
-    </View>
-  );
-}
+  const [index, setIndex] = useState(0);
+  const [routes] = useState([
+    { key: 'activity', title: 'Activity#i18n', focusedIcon: 'run-fast', unfocusedIcon: 'run'}
+  ]);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+  const renderScene = BottomNavigation.SceneMap({
+    activity: RunsList,
+  });
+
+
+  return <BottomNavigation navigationState={{ index, routes }}
+      onIndexChange={setIndex}
+      renderScene={renderScene}/>
+}
