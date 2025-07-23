@@ -1,7 +1,7 @@
 import { ScrollView, StatusBar } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { generate_tables, get_runs } from "@/utils/db_utils";
+import { generate_tables, getRuns } from "@/utils/db_utils";
 import { useEffect, useState } from "react";
 import { Run } from "@/utils/TableInterfaces";
 import { secondsToIsoTime } from "@/utils/utils";
@@ -11,7 +11,7 @@ export default function App() {
 
   useEffect(() => {
     generate_tables().then(() => {
-      get_runs().then((data: Run[]) => {
+      getRuns().then((data: Run[]) => {
         setRuns(data);
       });
     });

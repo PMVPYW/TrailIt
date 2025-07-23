@@ -1,6 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import * as Application from "expo-application";
-import { Run } from "./TableInterfaces";
+import { Run, RunCoordinate } from "./TableInterfaces";
+import * as Location from "expo-location";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -56,6 +57,7 @@ async function generate_run_coordinate_table() {
         alt REAL,
         speed REAL,
         heading REAL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (run_id) REFERENCES runs(id)
       );
     `);
@@ -70,13 +72,48 @@ export async function generate_tables() {
   await generate_run_coordinate_table();
 }
 
-export async function get_runs() {
+export async function getRuns() {
   const db = await getDb();
   try {
     const runs = await db.getAllAsync<Run>(
       `SELECT * FROM runs ORDER BY created_at DESC`
     );
     return runs;
+  } catch (error) {
+    console.error("Failed to fetch runs:", error);
+    return [];
+  }
+}
+
+export async function insertRunCoordinate(location: Location.LocationObject) {
+  const db = await getDb();
+  try {
+ 
+  db.withTransactionAsync(async () => {
+    await db.runAsync(
+        `INSERT INTO run_coordinate (run_id, lat, lon, alt, speed, heading) VALUES ((SELECT id from runs LIMIT 1), ?, ?, ?, ?, ?)`,
+        [
+          location.coords.latitude,
+          location.coords.longitude,
+          location.coords.altitude,
+          location.coords.speed,
+          location.coords.heading,
+        ]
+      );
+  }); 
+  } catch (error) {
+    console.error("Failed to fetch runs:", error);
+    return [];
+  }
+}
+
+export async function getRunCoordinates() {
+  const db = await getDb();
+  try {
+    const run_coordinates = await db.getAllAsync<RunCoordinate>(
+      `SELECT * FROM run_coordinate ORDER BY created_at DESC`
+    );
+    return run_coordinates;
   } catch (error) {
     console.error("Failed to fetch runs:", error);
     return [];
