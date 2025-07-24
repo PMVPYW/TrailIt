@@ -11,16 +11,17 @@
   "dependencies": {
     "@react-native-vector-icons/material-design-icons": "^12.2.0",
     "@rnmapbox/maps": "^10.1.39",
+    "eas": "^0.1.0",
     "expo": "~53.0.20",
     "expo-application": "~6.1.5",
+    "expo-location": "~18.1.6",
     "expo-sqlite": "~15.2.14",
     "expo-status-bar": "~2.2.3",
+    "expo-task-manager": "~13.1.6",
     "react": "19.0.0",
     "react-native": "0.79.5",
     "react-native-paper": "^5.14.5",
-    "react-native-safe-area-context": "^5.5.2",
-    "expo-location": "~18.1.6",
-    "expo-task-manager": "~13.1.6"
+    "react-native-safe-area-context": "^5.5.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -5,15 +5,55 @@ import * as TaskManager from "expo-task-manager";
 import { useState, useEffect } from "react";
 import { getRunCoordinates, insertRunCoordinate } from "@/utils/db_utils";
 import { RunCoordinate } from "@/utils/TableInterfaces";
+import MapboxGl from "@rnmapbox/maps";
+import type { Feature, LineString, GeoJsonProperties } from "geojson";
+
+MapboxGl.setAccessToken(
+  "sk.eyJ1IjoicG12MjI0MjY5OCIsImEiOiJjbWRlaGhiODQwMmdlMm9zZWp3am81bm85In0.c7fCa_eQPmViQGrndi6Y4Q"
+);
 
 export default function App() {
   const theme = useTheme();
+  const [mapReady, setMapReady] = useState(false);
   const [locations, setLocations] = useState<RunCoordinate[]>([]);
+  const [startPosition, setStartPosition] = useState<Location.LocationObject>();
   useEffect(() => {
-    getRunCoordinates().then((data) => {
-      setLocations(data);
-    });
+    const interval = setInterval(() => {
+      getRunCoordinates().then(setLocations);
+    }, 1000);
+
+    const requestPermissionsAndGetLocation = async () => {
+      const foreground: Location.LocationPermissionResponse =
+        await Location.requestForegroundPermissionsAsync();
+      if (!foreground.granted) {
+        console.error("Foreground permission denied");
+        return;
+      }
+
+      const background = await Location.requestBackgroundPermissionsAsync();
+      if (!background.granted) {
+        console.error("Background permission denied");
+        return;
+      }
+      setStartPosition(
+        await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Highest,
+        })
+      );
+    };
+
+    requestPermissionsAndGetLocation();
+    return () => clearInterval(interval);
   }, []);
+
+  const lineFeature: Feature<LineString, GeoJsonProperties> = {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "LineString",
+      coordinates: locations.map((loc) => [loc.lon, loc.lat]),
+    },
+  };
 
   const [started, setStarted] = useState<boolean>(false);
   return (
@@ -27,38 +67,71 @@ export default function App() {
             <Text variant="displaySmall">Distance: 0.00km</Text>
           </Card.Content>
           <Card.Actions>
-            {started ? 
-            <Button
-              mode="contained"
-              onPress={() => {
-                stop_tracking();setStarted(false)
-              }}
-            >
-              Stop#i18n
-            </Button>
-            : <Button
-              mode="contained"
-              onPress={() => {
-                start_tracking();setStarted(true);
-              }}
-            >
-              Start#i18n
-            </Button>}
+            {started ? (
+              <Button
+                mode="contained"
+                onPress={() => {
+                  stop_tracking();
+                  setStarted(false);
+                }}
+              >
+                Stop#i18n
+              </Button>
+            ) : (
+              <Button
+                mode="contained"
+                onPress={() => {
+                  start_tracking();
+                  setStarted(true);
+                }}
+              >
+                Start#i18n
+              </Button>
+            )}
           </Card.Actions>
         </Card>
-        {locations.map((loc) => (
-          <Card>
-            <Card.Title title={`${loc.lat} ${loc.lon} ${loc.alt}`}></Card.Title>
-          </Card>
-        ))}
+        <MapboxGl.MapView
+          styleURL="mapbox://styles/mapbox/satellite-v9"
+          style={{ flex: 1 }}
+          onDidFinishLoadingMap={() => setMapReady(true)}
+        >
+          {mapReady && (
+            <MapboxGl.Camera
+              zoomLevel={15}
+              pitch={60}
+              centerCoordinate={[
+                startPosition?.coords.longitude ?? 0,
+                startPosition?.coords.latitude ?? 0,
+              ]}
+            />
+          )}
+          <MapboxGl.RasterDemSource
+            id="mapbox-dem"
+            url="mapbox://mapbox.terrain-rgb"
+            tileSize={512}
+          >
+            <MapboxGl.Terrain sourceID="mapbox-dem" style={{exaggeration: 1.5}} />
+          </MapboxGl.RasterDemSource>
+          <MapboxGl.ShapeSource id="lineSource" shape={lineFeature}>
+            <MapboxGl.LineLayer
+              id="lineLayer"
+              style={{
+                lineColor: "blue",
+                lineWidth: 3,
+                lineCap: "round",
+                lineJoin: "round",
+              }}
+            />
+          </MapboxGl.ShapeSource>
+        </MapboxGl.MapView>
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
 
 async function start_tracking() {
-  
-  const foreground: Location.LocationPermissionResponse = await Location.requestForegroundPermissionsAsync();
+  const foreground: Location.LocationPermissionResponse =
+    await Location.requestForegroundPermissionsAsync();
   if (!foreground.granted) {
     console.error("Foreground permission denied");
     return;
@@ -73,12 +146,16 @@ async function start_tracking() {
     accuracy: Location.Accuracy.Highest,
     deferredUpdatesDistance: 10,
     showsBackgroundLocationIndicator: true,
+    foregroundService: {
+      notificationTitle: "Tracking your run",
+      notificationBody: "Location updates in background",
+    },
   }).catch(console.error);
 
   const isTracking = await Location.hasStartedLocationUpdatesAsync(
     "location_updates"
   );
-  console.log("Started tracking?", isTracking)
+  console.log("Started tracking?", isTracking);
 }
 
 TaskManager.defineTask(
