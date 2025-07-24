@@ -73,6 +73,19 @@ export async function getRuns() {
   }
 }
 
+export async function getRunById(id: number) {
+  const db = await getDb();
+  try {
+    const run: Run|null = await db.getFirstSync<Run>(
+      `SELECT * FROM runs WHERE id=? ORDER BY created_at DESC`, [id]
+    );
+    return run;
+  } catch (error) {
+    console.error("Failed to fetch runs:", error);
+    return [];
+  }
+}
+
 export async function CreateEmptyRun(): Promise<Run | null> {
   const db = await getDb();
   let createdRun: Run | null = null;
@@ -123,9 +136,9 @@ export async function insertRunCoordinate(
 export async function updateRun(run: Run) {
   const db = await getDb();
   try {
-    db.withTransactionAsync(async () => {
+    await db.withTransactionAsync(async () => {
       await db.runAsync(
-        `UPDATE runs SET (name=?, difficulty=?, duration=?, total_distance=?) WHERE id=?;`,
+        `UPDATE runs SET name=?, difficulty=?, duration=?, total_distance=? WHERE id=?;`,
         [run.name, run.difficulty, run.duration, run.total_distance, run.id]
       );
     });

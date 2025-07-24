@@ -4,10 +4,12 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { generate_tables, getRuns } from "@/utils/db_utils";
 import { useEffect, useState } from "react";
 import { Run } from "@/utils/TableInterfaces";
-import { secondsToIsoTime } from "@/utils/utils";
+import { NavigationProp, secondsToIsoTime } from "@/utils/utils";
+import { useNavigation } from "@react-navigation/native";
 
-export default function App() {
-    const [runs, setRuns] = useState<Run[]>([]);
+export default function RunsList() {
+  const navigation = useNavigation<NavigationProp>();
+  const [runs, setRuns] = useState<Run[]>([]);
 
   useEffect(() => {
     generate_tables().then(() => {
@@ -24,19 +26,31 @@ export default function App() {
         style={{ flex: 1, backgroundColor: theme.colors.background }}
       >
         <StatusBar translucent hidden={false} barStyle="default"></StatusBar>
-        <ScrollView
-          style={{ backgroundColor: theme.colors.background }}
-        >
-          {runs.map((run: Run) => (<Card key={run.id} style={{margin: 8}}>
-            <Card.Title title={run.name} titleVariant="displayLarge"></Card.Title>
-            <Card.Content>
-              <Text variant="bodyMedium">Distance: {run.total_distance/1000} km |#i18n</Text>
-              <Text variant="bodyMedium">Duration: {secondsToIsoTime(run.duration)} |#i18n</Text>
-              <Text variant="bodyMedium">Difficulty: {run.difficulty}</Text>
-              <Text variant="bodyMedium">Date: {run.created_at}</Text>
-            </Card.Content>
-          </Card>))}
-          
+        <ScrollView style={{ backgroundColor: theme.colors.background }}>
+          {runs.map((run: Run) => (
+            <Card
+              onPress={() =>
+                navigation.navigate("ActivityDetails", { activity_id: run.id })
+              }
+              key={run.id}
+              style={{ margin: 8 }}
+            >
+              <Card.Title
+                title={run.name}
+                titleVariant="displayLarge"
+              ></Card.Title>
+              <Card.Content>
+                <Text variant="bodyMedium">
+                  Distance: {run.total_distance / 1000} km |#i18n
+                </Text>
+                <Text variant="bodyMedium">
+                  Duration: {secondsToIsoTime(run.duration)} |#i18n
+                </Text>
+                <Text variant="bodyMedium">Difficulty: {run.difficulty}</Text>
+                <Text variant="bodyMedium">Date: {run.created_at}</Text>
+              </Card.Content>
+            </Card>
+          ))}
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>

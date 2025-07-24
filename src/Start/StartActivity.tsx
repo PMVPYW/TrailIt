@@ -30,7 +30,6 @@ export default function App() {
   useEffect(() => {
     AsyncStorage.setItem("currentRunId", (currentRun?.id ?? -1).toString());
     setStartTime(new Date());
-
     const interval = setInterval(() => {
       getRunCoordinates(currentRun?.id).then(setLocations);
     }, 1000);
@@ -38,8 +37,6 @@ export default function App() {
   }, [currentRun]);
 
   useEffect(() => {
-    
-
     const requestPermissionsAndGetLocation = async () => {
       const foreground: Location.LocationPermissionResponse =
         await Location.requestForegroundPermissionsAsync();
@@ -93,7 +90,8 @@ export default function App() {
                   if (startTime == null || currentRun == null) {
                     return;
                   }
-                  const duration = new Date().getTime() - startTime.getTime();
+                  const duration = (new Date().getTime() - startTime.getTime())/1000;
+                  console.log(duration, secondsToIsoTime(duration))
                   const distance = 0; //calculate distance
                   updateRun({
                     ...currentRun,
