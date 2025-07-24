@@ -27,18 +27,6 @@ async function generate_run_table() {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    //todo remove
-    await db.execAsync(`
-      DELETE FROM runs;
-    `);
-    await db.execAsync(`
-      INSERT INTO runs (name, difficulty, duration, total_distance)
-      VALUES ('Morning Run', 'Medium', 3600, 5000);
-    `);
-    await db.execAsync(`
-      INSERT INTO runs (name, difficulty, duration, total_distance)
-      VALUES ('Evening Run', 'Hard', 1865, 5600);
-    `);
     console.log("Runs table created successfully.");
   } catch (error) {
     console.error("Error creating trails table:", error);
@@ -85,14 +73,39 @@ export async function getRuns() {
   }
 }
 
-export async function insertRunCoordinate(location: Location.LocationObject) {
+export async function CreateEmptyRun(): Promise<Run | null> {
+  const db = await getDb();
+  let createdRun: Run | null = null;
+
+  try {
+    await db.withTransactionAsync(async () => {
+      const result = await db.getFirstAsync<Run>(`
+        INSERT INTO runs (name, difficulty, duration, total_distance)
+        VALUES ('p', 'PENDING', 0, 0)
+        RETURNING *;
+      `);
+      if (result) {
+        createdRun = result;
+      }
+    });
+    return createdRun;
+  } catch (error) {
+    console.error("Failed to create run:", error);
+    return null;
+  }
+}
+
+export async function insertRunCoordinate(
+  rund_id: number,
+  location: Location.LocationObject
+) {
   const db = await getDb();
   try {
- 
-  db.withTransactionAsync(async () => {
-    await db.runAsync(
-        `INSERT INTO run_coordinate (run_id, lat, lon, alt, speed, heading) VALUES ((SELECT id from runs LIMIT 1), ?, ?, ?, ?, ?)`,
+    db.withTransactionAsync(async () => {
+      await db.runAsync(
+        `INSERT INTO run_coordinate (run_id, lat, lon, alt, speed, heading) VALUES (?, ?, ?, ?, ?, ?)`,
         [
+          rund_id,
           location.coords.latitude,
           location.coords.longitude,
           location.coords.altitude,
@@ -100,22 +113,41 @@ export async function insertRunCoordinate(location: Location.LocationObject) {
           location.coords.heading,
         ]
       );
-  }); 
+    });
   } catch (error) {
     console.error("Failed to fetch runs:", error);
     return [];
   }
 }
 
-export async function getRunCoordinates() {
+export async function updateRun(run: Run) {
+  const db = await getDb();
+  try {
+    db.withTransactionAsync(async () => {
+      await db.runAsync(
+        `UPDATE runs SET (name=?, difficulty=?, duration=?, total_distance=?) WHERE id=?;`,
+        [run.name, run.difficulty, run.duration, run.total_distance, run.id]
+      );
+    });
+  } catch (error) {
+    console.error("Failed to fetch runs:", error);
+  }
+}
+
+export async function getRunCoordinates(run_id: number | undefined) {
+  if (run_id === undefined) {
+    return [];
+  }
   const db = await getDb();
   try {
     const run_coordinates = await db.getAllAsync<RunCoordinate>(
-      `SELECT * FROM run_coordinate ORDER BY created_at DESC`
+      `SELECT * FROM run_coordinate WHERE run_id = ? ORDER BY created_at DESC`,
+      [run_id]
     );
+    console.log(`RUN COORDINATES: ${run_coordinates.length}`)
     return run_coordinates;
   } catch (error) {
     console.error("Failed to fetch runs:", error);
-    return [];
   }
+  return []
 }

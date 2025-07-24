@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-vector-icons/material-design-icons": "^12.2.0",
     "@rnmapbox/maps": "^10.1.39",
     "eas": "^0.1.0",

@@ -3,10 +3,17 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import { useState, useEffect } from "react";
-import { getRunCoordinates, insertRunCoordinate } from "@/utils/db_utils";
-import { RunCoordinate } from "@/utils/TableInterfaces";
+import {
+  CreateEmptyRun,
+  getRunCoordinates,
+  insertRunCoordinate,
+  updateRun,
+} from "@/utils/db_utils";
+import { Run, RunCoordinate } from "@/utils/TableInterfaces";
 import MapboxGl from "@rnmapbox/maps";
 import type { Feature, LineString, GeoJsonProperties } from "geojson";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { secondsToIsoTime } from "@/utils/utils";
 
 MapboxGl.setAccessToken(
   "sk.eyJ1IjoicG12MjI0MjY5OCIsImEiOiJjbWRlaGhiODQwMmdlMm9zZWp3am81bm85In0.c7fCa_eQPmViQGrndi6Y4Q"
@@ -17,10 +24,21 @@ export default function App() {
   const [mapReady, setMapReady] = useState(false);
   const [locations, setLocations] = useState<RunCoordinate[]>([]);
   const [startPosition, setStartPosition] = useState<Location.LocationObject>();
+  const [currentRun, setCurrentRun] = useState<Run | null>();
+  const [startTime, setStartTime] = useState<Date | null>(null);
+
   useEffect(() => {
+    AsyncStorage.setItem("currentRunId", (currentRun?.id ?? -1).toString());
+    setStartTime(new Date());
+
     const interval = setInterval(() => {
-      getRunCoordinates().then(setLocations);
+      getRunCoordinates(currentRun?.id).then(setLocations);
     }, 1000);
+    return () => clearInterval(interval);
+  }, [currentRun]);
+
+  useEffect(() => {
+    
 
     const requestPermissionsAndGetLocation = async () => {
       const foreground: Location.LocationPermissionResponse =
@@ -43,7 +61,6 @@ export default function App() {
     };
 
     requestPermissionsAndGetLocation();
-    return () => clearInterval(interval);
   }, []);
 
   const lineFeature: Feature<LineString, GeoJsonProperties> = {
@@ -73,6 +90,17 @@ export default function App() {
                 onPress={() => {
                   stop_tracking();
                   setStarted(false);
+                  if (startTime == null || currentRun == null) {
+                    return;
+                  }
+                  const duration = new Date().getTime() - startTime.getTime();
+                  const distance = 0; //calculate distance
+                  updateRun({
+                    ...currentRun,
+                    duration: duration,
+                    total_distance: distance,
+                  });
+                  setCurrentRun(null);
                 }}
               >
                 Stop#i18n
@@ -80,8 +108,10 @@ export default function App() {
             ) : (
               <Button
                 mode="contained"
-                onPress={() => {
+                onPress={async () => {
                   start_tracking();
+                  const c_run = await CreateEmptyRun();
+                  setCurrentRun(c_run);
                   setStarted(true);
                 }}
               >
@@ -97,6 +127,9 @@ export default function App() {
         >
           {mapReady && (
             <MapboxGl.Camera
+              followUserLocation={true}
+              followPitch={60}
+              followZoomLevel={15}
               zoomLevel={15}
               pitch={60}
               centerCoordinate={[
@@ -110,7 +143,10 @@ export default function App() {
             url="mapbox://mapbox.terrain-rgb"
             tileSize={512}
           >
-            <MapboxGl.Terrain sourceID="mapbox-dem" style={{exaggeration: 1.5}} />
+            <MapboxGl.Terrain
+              sourceID="mapbox-dem"
+              style={{ exaggeration: 1.5 }}
+            />
           </MapboxGl.RasterDemSource>
           <MapboxGl.ShapeSource id="lineSource" shape={lineFeature}>
             <MapboxGl.LineLayer
@@ -123,6 +159,11 @@ export default function App() {
               }}
             />
           </MapboxGl.ShapeSource>
+          <MapboxGl.LocationPuck
+            puckBearing="course"
+            puckBearingEnabled={true}
+            pulsing={{ isEnabled: true, color: "blue" }}
+          />
         </MapboxGl.MapView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -144,7 +185,7 @@ async function start_tracking() {
   }
   await Location.startLocationUpdatesAsync("location_updates", {
     accuracy: Location.Accuracy.Highest,
-    deferredUpdatesDistance: 10,
+    deferredUpdatesDistance: 0,
     showsBackgroundLocationIndicator: true,
     foregroundService: {
       notificationTitle: "Tracking your run",
@@ -167,12 +208,16 @@ TaskManager.defineTask(
     data: { locations: Location.LocationObject[] };
     error: TaskManager.TaskManagerError | null;
   }) => {
-    console.error("entered task");
     if (error) {
       return;
     }
+    console.error("entered task");
     // Extract the coords from the LocationObject[]
-    data.locations.forEach((loc) => insertRunCoordinate(loc));
+    const currentRunId = Number(await AsyncStorage.getItem("currentRunId"));
+    if (currentRunId < 0) {
+      return;
+    }
+    data.locations.forEach((loc) => insertRunCoordinate(currentRunId, loc));
   }
 );
 
