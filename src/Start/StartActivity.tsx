@@ -26,15 +26,35 @@ export default function App() {
   const [startPosition, setStartPosition] = useState<Location.LocationObject>();
   const [currentRun, setCurrentRun] = useState<Run | null>();
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [timeSpent, setTimeSpent] = useState<number>(0);
+  const [started, setStarted] = useState<boolean>(false);
 
   useEffect(() => {
     AsyncStorage.setItem("currentRunId", (currentRun?.id ?? -1).toString());
-    setStartTime(new Date());
     const interval = setInterval(() => {
       getRunCoordinates(currentRun?.id).then(setLocations);
     }, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, [currentRun]);
+
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const updateTimeSpent = () => {
+      if (!started || !startTime) return;
+      const now = Date.now();
+      setTimeSpent((now - startTime.getTime()) / 1000);
+      animationFrameId = requestAnimationFrame(updateTimeSpent);
+    };
+
+    updateTimeSpent();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [started, startTime]);
 
   useEffect(() => {
     const requestPermissionsAndGetLocation = async () => {
@@ -68,8 +88,6 @@ export default function App() {
       coordinates: locations.map((loc) => [loc.lon, loc.lat]),
     },
   };
-
-  const [started, setStarted] = useState<boolean>(false);
   return (
     <SafeAreaProvider>
       <SafeAreaView
@@ -77,7 +95,9 @@ export default function App() {
       >
         <Card>
           <Card.Content>
-            <Text variant="displaySmall">Duration: 00:00:00</Text>
+            <Text variant="displaySmall">
+              Duration: {secondsToIsoTime(timeSpent)}
+            </Text>
             <Text variant="displaySmall">Distance: 0.00km</Text>
           </Card.Content>
           <Card.Actions>
@@ -90,8 +110,9 @@ export default function App() {
                   if (startTime == null || currentRun == null) {
                     return;
                   }
-                  const duration = (new Date().getTime() - startTime.getTime())/1000;
-                  console.log(duration, secondsToIsoTime(duration))
+                  const duration =
+                    (new Date().getTime() - startTime.getTime()) / 1000;
+                  console.log(duration, secondsToIsoTime(duration));
                   const distance = 0; //calculate distance
                   updateRun({
                     ...currentRun,
@@ -110,6 +131,7 @@ export default function App() {
                   start_tracking();
                   const c_run = await CreateEmptyRun();
                   setCurrentRun(c_run);
+                  setStartTime(new Date());
                   setStarted(true);
                 }}
               >
@@ -196,28 +218,29 @@ async function start_tracking() {
   );
   console.log("Started tracking?", isTracking);
 }
-
-TaskManager.defineTask(
-  "location_updates",
-  async ({
-    data,
-    error,
-  }: {
-    data: { locations: Location.LocationObject[] };
-    error: TaskManager.TaskManagerError | null;
-  }) => {
-    if (error) {
-      return;
+if (!TaskManager.isTaskDefined("location_updates")) {
+  TaskManager.defineTask(
+    "location_updates",
+    async ({
+      data,
+      error,
+    }: {
+      data: { locations: Location.LocationObject[] };
+      error: TaskManager.TaskManagerError | null;
+    }) => {
+      if (error) {
+        return;
+      }
+      console.error("entered task");
+      // Extract the coords from the LocationObject[]
+      const currentRunId = Number(await AsyncStorage.getItem("currentRunId"));
+      if (currentRunId < 0) {
+        return;
+      }
+      data.locations.forEach((loc) => insertRunCoordinate(currentRunId, loc));
     }
-    console.error("entered task");
-    // Extract the coords from the LocationObject[]
-    const currentRunId = Number(await AsyncStorage.getItem("currentRunId"));
-    if (currentRunId < 0) {
-      return;
-    }
-    data.locations.forEach((loc) => insertRunCoordinate(currentRunId, loc));
-  }
-);
+  );
+}
 
 function stop_tracking() {
   Location.stopLocationUpdatesAsync("location_updates");
