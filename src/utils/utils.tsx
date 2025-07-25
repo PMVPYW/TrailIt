@@ -119,4 +119,11 @@ export type Route = {
   unfocusedIcon: string;
 };
 
+export type ActivityDetailsRouteParams = {
+  ActivityDetails: {
+    activity_id: number; 
+  };
+};
+
+
 export type CoordinateArray = [number, number];

@@ -4,8 +4,8 @@ import {
   updateRunsLengt,
 } from "@/utils/db_utils";
 import { Run } from "@/utils/TableInterfaces";
-import { calculateMapBounds, CoordinateArray, secondsToIsoTime } from "@/utils/utils";
-import { useRoute } from "@react-navigation/native";
+import { ActivityDetailsRouteParams, calculateMapBounds, CoordinateArray, secondsToIsoTime } from "@/utils/utils";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { ScrollView, StatusBar } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
@@ -15,7 +15,7 @@ import { Feature, GeoJsonProperties, LineString } from "geojson";
 
 export default function ActivityDetails() {
   const theme = useTheme();
-  const route = useRoute();
+  const route = useRoute<RouteProp<ActivityDetailsRouteParams, "ActivityDetails">>();
   const { activity_id } = route.params;
 
   const [activity, setActivity] = useState<Run | null>(null);
