@@ -74,6 +74,32 @@ export function calculateTotalDistance(coordinates: RunCoordinate[]): number {
   return totalDistance;
 }
 
+export function calculateMapBounds(coords: CoordinateArray[]):  { ne: CoordinateArray; sw: CoordinateArray } {
+  if (coords.length === 0) {
+    return {
+      ne: [0, 0],
+      sw: [0, 0],
+    };
+  }
+
+  let minLon = coords[0][0];
+  let maxLon = coords[0][0];
+  let minLat = coords[0][1];
+  let maxLat = coords[0][1];
+
+  coords.forEach(([lon, lat]) => {
+    minLon = Math.min(minLon, lon);
+    maxLon = Math.max(maxLon, lon);
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+  });
+
+  return {
+    ne: [maxLon, maxLat] as [number, number], // top-right
+    sw: [minLon, minLat] as [number, number], // bottom-left
+  };
+}
+
 export type RootStackParamList = {
   HomeTabs: undefined;
   ActivityDetails: { activity_id: number };

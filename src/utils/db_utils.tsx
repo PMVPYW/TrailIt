@@ -2,6 +2,7 @@ import * as SQLite from "expo-sqlite";
 import * as Application from "expo-application";
 import { Run, RunCoordinate } from "./TableInterfaces";
 import * as Location from "expo-location";
+import { calculateTotalDistance } from "./utils";
 
 let db: SQLite.SQLiteDatabase | null = null;
 
@@ -60,6 +61,29 @@ export async function generate_tables() {
   await generate_run_coordinate_table();
 }
 
+export async function updateRunsLengt(run_id: number) {
+  const db = await getDb();
+  try {
+    let rtn = null;
+    const coordinates = await getRunCoordinates(run_id);
+    const totalDistance = calculateTotalDistance(coordinates);
+    await db.withTransactionAsync(async () => {
+      const result = await db.getFirstAsync<Run>(
+        `UPDATE runs SET total_distance=? WHERE id=?
+        RETURNING *;`,
+        [totalDistance * 1000, run_id] // Convert to meters
+      );
+      if (result != null) {
+        rtn = result;
+      }
+    });
+    return rtn;
+  } catch (error) {
+    console.error("Failed to update run distance:", error);
+    return null;
+  }
+}
+
 export async function getRuns() {
   const db = await getDb();
   try {
@@ -76,8 +100,9 @@ export async function getRuns() {
 export async function getRunById(id: number) {
   const db = await getDb();
   try {
-    const run: Run|null = await db.getFirstSync<Run>(
-      `SELECT * FROM runs WHERE id=? ORDER BY created_at DESC`, [id]
+    const run: Run | null = await db.getFirstSync<Run>(
+      `SELECT * FROM runs WHERE id=? ORDER BY created_at DESC`,
+      [id]
     );
     return run;
   } catch (error) {
@@ -157,10 +182,10 @@ export async function getRunCoordinates(run_id: number | undefined) {
       `SELECT * FROM run_coordinate WHERE run_id = ? ORDER BY created_at DESC`,
       [run_id]
     );
-    console.log(`RUN COORDINATES: ${run_coordinates.length}`)
+    console.log(`RUN COORDINATES: ${run_coordinates.length}`);
     return run_coordinates;
   } catch (error) {
     console.error("Failed to fetch runs:", error);
   }
-  return []
+  return [];
 }

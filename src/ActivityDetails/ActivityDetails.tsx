@@ -1,6 +1,10 @@
-import { getRunById, getRunCoordinates } from "@/utils/db_utils";
+import {
+  getRunById,
+  getRunCoordinates,
+  updateRunsLengt,
+} from "@/utils/db_utils";
 import { Run } from "@/utils/TableInterfaces";
-import { CoordinateArray, secondsToIsoTime } from "@/utils/utils";
+import { calculateMapBounds, CoordinateArray, secondsToIsoTime } from "@/utils/utils";
 import { useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { ScrollView, StatusBar } from "react-native";
@@ -17,6 +21,13 @@ export default function ActivityDetails() {
   const [activity, setActivity] = useState<Run | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [center, setCenter] = useState<CoordinateArray>([0, 0]);
+  const [bounds, setBounds] = useState<{
+    ne: CoordinateArray;
+    sw: CoordinateArray;
+  }>({
+    ne: [0, 0],
+    sw: [0, 0],
+  });
 
   const [lineFeature, setLineFeature] = useState<
     Feature<LineString, GeoJsonProperties>
@@ -31,7 +42,16 @@ export default function ActivityDetails() {
 
   useEffect(() => {
     getRunById(activity_id).then((act) => {
-      setActivity(act as Run);
+      if (act === null) {
+        return;
+      }
+      if ((act as Run).total_distance == 0) {
+        updateRunsLengt(activity_id).then((updatedRun) => {
+          setActivity(updatedRun);
+        });
+      } else {
+        setActivity(act as Run);
+      }
     });
     getRunCoordinates(activity_id).then((data) => {
       setLineFeature({
@@ -42,7 +62,8 @@ export default function ActivityDetails() {
           coordinates: data.map((loc) => [loc.lon, loc.lat]),
         },
       });
-      setCenter(calculateCenter(data.map(item=>[item.lon, item.lat])));
+      setCenter(calculateCenter(data.map((item) => [item.lon, item.lat])));
+      setBounds(calculateMapBounds(data.map((item) => [item.lon, item.lat])));
     });
   }, [activity_id]);
   return (
@@ -59,6 +80,9 @@ export default function ActivityDetails() {
               <Text variant="bodyMedium">
                 Duration: {secondsToIsoTime(activity?.duration ?? 0)}
               </Text>
+              <Text variant="bodyMedium">
+                Distance: {(activity?.total_distance ?? 0 / 1000).toFixed(2)}Km
+              </Text>
             </Card.Content>
           </Card>
           <MapboxGl.MapView
@@ -68,12 +92,16 @@ export default function ActivityDetails() {
           >
             {mapReady && (
               <MapboxGl.Camera
-                followUserLocation={true}
                 followPitch={60}
-                followZoomLevel={15}
-                zoomLevel={15}
+                bounds={{
+                  ne: bounds.ne,
+                  sw: bounds.sw,
+                  paddingTop: 50,
+                  paddingBottom: 50,
+                  paddingLeft: 50,
+                  paddingRight: 50,
+                }}
                 pitch={60}
-                centerCoordinate={center}
               />
             )}
             <MapboxGl.RasterDemSource

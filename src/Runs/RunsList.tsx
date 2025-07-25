@@ -41,7 +41,7 @@ export default function RunsList() {
               ></Card.Title>
               <Card.Content>
                 <Text variant="bodyMedium">
-                  Distance: {run.total_distance / 1000} km |#i18n
+                  Distance: {(run.total_distance / 1000).toFixed(2)} km |#i18n
                 </Text>
                 <Text variant="bodyMedium">
                   Duration: {secondsToIsoTime(run.duration)} |#i18n

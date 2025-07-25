@@ -130,7 +130,7 @@ export default function App() {
                   updateRun({
                     ...currentRun,
                     duration: duration,
-                    total_distance: distance,
+                    total_distance: distance*1000,
                   });
                   setCurrentRun(null);
                 }}
