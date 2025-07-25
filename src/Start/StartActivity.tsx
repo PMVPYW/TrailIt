@@ -13,7 +13,7 @@ import { Run, RunCoordinate } from "@/utils/TableInterfaces";
 import MapboxGl from "@rnmapbox/maps";
 import type { Feature, LineString, GeoJsonProperties } from "geojson";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { secondsToIsoTime } from "@/utils/utils";
+import { calculateTotalDistance, secondsToIsoTime } from "@/utils/utils";
 
 MapboxGl.setAccessToken(
   "sk.eyJ1IjoicG12MjI0MjY5OCIsImEiOiJjbWRlaGhiODQwMmdlMm9zZWp3am81bm85In0.c7fCa_eQPmViQGrndi6Y4Q"
@@ -28,28 +28,40 @@ export default function App() {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [timeSpent, setTimeSpent] = useState<number>(0);
   const [started, setStarted] = useState<boolean>(false);
+  const [distance, setDistance] = useState<number>(0);
 
   useEffect(() => {
+    if (!currentRun) {
+      return;
+    }
     AsyncStorage.setItem("currentRunId", (currentRun?.id ?? -1).toString());
     const interval = setInterval(() => {
-      getRunCoordinates(currentRun?.id).then(setLocations);
+      getRunCoordinates(currentRun?.id).then((locs) => {
+        setLocations(locs);
+      });
     }, 1000);
     return () => {
       clearInterval(interval);
     };
   }, [currentRun]);
 
+  useEffect(()=>{
+    setDistance(calculateTotalDistance(locations));
+  }, [locations]);
+
   useEffect(() => {
     let animationFrameId: number;
 
-    const updateTimeSpent = () => {
-      if (!started || !startTime) return;
+    const updateTime = () => {
+      if (!started || !startTime) {
+        return;
+      }
       const now = Date.now();
       setTimeSpent((now - startTime.getTime()) / 1000);
-      animationFrameId = requestAnimationFrame(updateTimeSpent);
+      animationFrameId = requestAnimationFrame(updateTime);
     };
 
-    updateTimeSpent();
+    updateTime();
 
     return () => {
       cancelAnimationFrame(animationFrameId);
@@ -98,7 +110,9 @@ export default function App() {
             <Text variant="displaySmall">
               Duration: {secondsToIsoTime(timeSpent)}
             </Text>
-            <Text variant="displaySmall">Distance: 0.00km</Text>
+            <Text variant="displaySmall">
+              Distance: {distance.toFixed(2)}km
+            </Text>
           </Card.Content>
           <Card.Actions>
             {started ? (
@@ -113,7 +127,6 @@ export default function App() {
                   const duration =
                     (new Date().getTime() - startTime.getTime()) / 1000;
                   console.log(duration, secondsToIsoTime(duration));
-                  const distance = 0; //calculate distance
                   updateRun({
                     ...currentRun,
                     duration: duration,
