@@ -45,7 +45,7 @@ export default function App() {
     };
   }, [currentRun]);
 
-  useEffect(()=>{
+  useEffect(() => {
     setDistance(calculateTotalDistance(locations));
   }, [locations]);
 
@@ -130,7 +130,7 @@ export default function App() {
                   updateRun({
                     ...currentRun,
                     duration: duration,
-                    total_distance: distance*1000,
+                    total_distance: distance * 1000,
                   });
                   setCurrentRun(null);
                 }}
@@ -158,17 +158,18 @@ export default function App() {
           style={{ flex: 1 }}
           onDidFinishLoadingMap={() => setMapReady(true)}
         >
-          {mapReady && (
+          {mapReady && startPosition && (
             <MapboxGl.Camera
+              defaultSettings={{
+                centerCoordinate: [
+                  startPosition.coords.longitude, startPosition.coords.latitude],
+                zoomLevel: 15,
+                pitch: 60
+              }}
+
               followUserLocation={true}
               followPitch={60}
               followZoomLevel={15}
-              zoomLevel={15}
-              pitch={60}
-              centerCoordinate={[
-                startPosition?.coords.longitude ?? 0,
-                startPosition?.coords.latitude ?? 0,
-              ]}
             />
           )}
           <MapboxGl.RasterDemSource

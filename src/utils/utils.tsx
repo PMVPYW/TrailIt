@@ -13,6 +13,18 @@ export function secondsToIsoTime(seconds: number): string {
   return parts.join(":");
 }
 
+export function secondsToMinuteAndSecond(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+
+  // Corrige casos em que arredondar os segundos dá 60
+  const finalMins = secs === 60 ? mins + 1 : mins;
+  const finalSecs = secs === 60 ? 0 : secs;
+
+  return `${finalMins.toString().padStart(2, "0")}:${finalSecs.toString().padStart(2, "0")}`;
+}
+
+
 export function straightLineDistance(
   point1: RunCoordinate,
   point2: RunCoordinate

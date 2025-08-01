@@ -4,7 +4,7 @@ import {
   updateRunsLengt,
 } from "@/utils/db_utils";
 import { Run } from "@/utils/TableInterfaces";
-import { ActivityDetailsRouteParams, calculateMapBounds, CoordinateArray, secondsToIsoTime } from "@/utils/utils";
+import { ActivityDetailsRouteParams, calculateMapBounds, CoordinateArray, secondsToIsoTime, secondsToMinuteAndSecond } from "@/utils/utils";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { ScrollView, StatusBar } from "react-native";
@@ -81,7 +81,10 @@ export default function ActivityDetails() {
                 Duration: {secondsToIsoTime(activity?.duration ?? 0)}
               </Text>
               <Text variant="bodyMedium">
-                Distance: {(activity?.total_distance ?? 0 / 1000).toFixed(2)}Km
+                Distance: {((activity?.total_distance ?? 0) / 1000).toFixed(2)}Km
+              </Text>
+              <Text variant="bodyMedium">
+                Average Pace: {calculate_avg_pace_min_per_km(activity?.total_distance ?? 0, activity?.duration ?? 0)} min/Km
               </Text>
             </Card.Content>
           </Card>
@@ -132,6 +135,14 @@ export default function ActivityDetails() {
   );
 }
 
+function calculate_avg_pace_min_per_km(distance: number, duration: number): string {
+  if (distance === 0 || duration === 0) {
+    return "N/A";
+  }
+  const output = (duration / distance) * 1000;
+  return secondsToMinuteAndSecond(output);
+}
+console.error(calculate_avg_pace_min_per_km(880, 82))
 function calculateCenter(coords: CoordinateArray[]): CoordinateArray {
   if (coords.length === 0) {
     return [0, 0];
