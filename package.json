@@ -16,6 +16,7 @@
     "@react-navigation/native-stack": "^7.3.21",
     "@rnmapbox/maps": "^10.1.39",
     "eas": "^0.1.0",
+    "eas-cli": "^16.17.4",
     "expo": "~53.0.20",
     "expo-application": "~6.1.5",
     "expo-location": "~18.1.6",

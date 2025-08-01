@@ -24,6 +24,13 @@ export function secondsToMinuteAndSecond(seconds: number): string {
   return `${finalMins.toString().padStart(2, "0")}:${finalSecs.toString().padStart(2, "0")}`;
 }
 
+export function calculate_avg_pace_min_per_km(distance: number, duration: number): string {
+  if (distance === 0 || duration === 0) {
+    return "N/A";
+  }
+  const output = (duration / distance) * 1000;
+  return secondsToMinuteAndSecond(output);
+}
 
 export function straightLineDistance(
   point1: RunCoordinate,
@@ -83,7 +90,7 @@ export function calculateTotalDistance(coordinates: RunCoordinate[]): number {
       coordinates[i + 1]
     );
   }
-  return totalDistance;
+  return totalDistance; //in kilometers
 }
 
 export function calculateMapBounds(coords: CoordinateArray[]):  { ne: CoordinateArray; sw: CoordinateArray } {

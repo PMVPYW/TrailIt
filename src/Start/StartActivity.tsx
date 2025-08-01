@@ -13,7 +13,7 @@ import { Run, RunCoordinate } from "@/utils/TableInterfaces";
 import MapboxGl from "@rnmapbox/maps";
 import type { Feature, LineString, GeoJsonProperties } from "geojson";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { calculateTotalDistance, secondsToIsoTime } from "@/utils/utils";
+import { calculate_avg_pace_min_per_km, calculateTotalDistance, secondsToIsoTime } from "@/utils/utils";
 
 MapboxGl.setAccessToken(
   "sk.eyJ1IjoicG12MjI0MjY5OCIsImEiOiJjbWRlaGhiODQwMmdlMm9zZWp3am81bm85In0.c7fCa_eQPmViQGrndi6Y4Q"
@@ -112,6 +112,9 @@ export default function App() {
             </Text>
             <Text variant="displaySmall">
               Distance: {distance.toFixed(2)}km
+            </Text>
+            <Text variant="displaySmall">
+              AVG Pace: {calculate_avg_pace_min_per_km(distance * 1000, Number(timeSpent.toFixed(0)))} m/km
             </Text>
           </Card.Content>
           <Card.Actions>

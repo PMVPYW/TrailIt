@@ -4,7 +4,7 @@ import {
   updateRunsLengt,
 } from "@/utils/db_utils";
 import { Run } from "@/utils/TableInterfaces";
-import { ActivityDetailsRouteParams, calculateMapBounds, CoordinateArray, secondsToIsoTime, secondsToMinuteAndSecond } from "@/utils/utils";
+import { ActivityDetailsRouteParams, calculate_avg_pace_min_per_km, calculateMapBounds, CoordinateArray, secondsToIsoTime, secondsToMinuteAndSecond } from "@/utils/utils";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { ScrollView, StatusBar } from "react-native";
@@ -135,14 +135,6 @@ export default function ActivityDetails() {
   );
 }
 
-function calculate_avg_pace_min_per_km(distance: number, duration: number): string {
-  if (distance === 0 || duration === 0) {
-    return "N/A";
-  }
-  const output = (duration / distance) * 1000;
-  return secondsToMinuteAndSecond(output);
-}
-console.error(calculate_avg_pace_min_per_km(880, 82))
 function calculateCenter(coords: CoordinateArray[]): CoordinateArray {
   if (coords.length === 0) {
     return [0, 0];
