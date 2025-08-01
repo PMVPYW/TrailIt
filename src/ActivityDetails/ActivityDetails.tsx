@@ -1,17 +1,19 @@
 import {
   getRunById,
   getRunCoordinates,
+  getRunCoordinatesHeigthArray,
   updateRunsLengt,
 } from "@/utils/db_utils";
 import { Run } from "@/utils/TableInterfaces";
 import { ActivityDetailsRouteParams, calculate_avg_pace_min_per_km, calculateMapBounds, CoordinateArray, secondsToIsoTime, secondsToMinuteAndSecond } from "@/utils/utils";
 import { RouteProp, useRoute } from "@react-navigation/native";
 import { useEffect, useState } from "react";
-import { ScrollView, StatusBar } from "react-native";
+import { Dimensions, ScrollView, StatusBar } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import MapboxGl from "@rnmapbox/maps";
 import { Feature, GeoJsonProperties, LineString } from "geojson";
+import { LineChart } from "react-native-chart-kit";
 
 export default function ActivityDetails() {
   const theme = useTheme();
@@ -28,6 +30,8 @@ export default function ActivityDetails() {
     ne: [0, 0],
     sw: [0, 0],
   });
+
+  const [heights, setHeights] = useState<number[]>([]);
 
   const [lineFeature, setLineFeature] = useState<
     Feature<LineString, GeoJsonProperties>
@@ -52,6 +56,9 @@ export default function ActivityDetails() {
       } else {
         setActivity(act as Run);
       }
+      getRunCoordinatesHeigthArray(activity_id).then((heights) => {
+        setHeights(heights);
+      });
     });
     getRunCoordinates(activity_id).then((data) => {
       setLineFeature({
@@ -66,6 +73,7 @@ export default function ActivityDetails() {
       setBounds(calculateMapBounds(data.map((item) => [item.lon, item.lat])));
     });
   }, [activity_id]);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView
@@ -129,6 +137,38 @@ export default function ActivityDetails() {
               />
             </MapboxGl.ShapeSource>
           </MapboxGl.MapView>
+          {heights.length && <LineChart fromZero={true} data={{
+            labels: heights.map((_, index) => index.toString()),
+            datasets: [
+              {
+                data: heights
+              }
+            ]
+          }} width={Dimensions.get("window").width} // from react-native
+            height={220}
+            yAxisSuffix="m"
+            yAxisInterval={1} // optional, defaults to 1
+            chartConfig={{
+              backgroundColor: "#e26a00",
+              backgroundGradientFrom: "#fb8c00",
+              backgroundGradientTo: "#ffa726",
+              decimalPlaces: 2, // optional, defaults to 2dp
+              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              style: {
+                borderRadius: 16
+              },
+              propsForDots: {
+                r: "6",
+                strokeWidth: "2",
+                stroke: "#ffa726"
+              }
+            }}
+            bezier
+            style={{
+              marginVertical: 8,
+              borderRadius: 16
+            }} />}
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>

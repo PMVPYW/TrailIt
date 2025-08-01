@@ -189,3 +189,21 @@ export async function getRunCoordinates(run_id: number | undefined) {
   }
   return [];
 }
+
+export async function getRunCoordinatesHeigthArray(run_id: number | undefined) {
+  if (run_id === undefined) {
+    return [];
+  }
+  const db = await getDb();
+  try {
+    const run_coordinates = await db.getAllAsync<RunCoordinate>(
+      `SELECT alt FROM run_coordinate WHERE run_id = ? ORDER BY created_at DESC`,
+      [run_id]
+    );
+    console.log(`RUN COORDINATES: ${run_coordinates.length}`);
+    return run_coordinates.map(coord => coord.alt);
+  } catch (error) {
+    console.error("Failed to fetch runs:", error);
+  }
+  return [];
+}
